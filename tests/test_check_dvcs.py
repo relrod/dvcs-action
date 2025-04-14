@@ -5,7 +5,7 @@ import pytest
 import requests_mock
 from requests.exceptions import MissingSchema  # type: ignore
 
-import check_dvcs
+from dvcs import check_dvcs
 
 
 class TestDoesStringContainJira:
@@ -197,7 +197,7 @@ class TestMain:
     def test_delete_previous_commit_fails(self, capsys):
         environ['PULL_REQUEST'] = "{}"
         environ['GH_TOKEN'] = "asdf1234"
-        with mock.patch('check_dvcs.get_previous_comments_urls', side_effect=check_dvcs.CommandException("Failing on purpose")):
+        with mock.patch('dvcs.check_dvcs.get_previous_comments_urls', side_effect=check_dvcs.CommandException("Failing on purpose")):
             with pytest.raises(SystemExit) as e:
                 check_dvcs.main()
             output = capsys.readouterr()
@@ -212,9 +212,9 @@ class TestMain:
         """
         environ['PULL_REQUEST'] = '{"title": "junk"}'
         environ['GH_TOKEN'] = "asdf1234"
-        with mock.patch('check_dvcs.get_previous_comments_urls', return_value=[]):
-            with mock.patch('check_dvcs.get_commit_jira_numbers', side_effect=check_dvcs.CommandException("Failing on purpose")):
-                with mock.patch('check_dvcs.requests.post'):
+        with mock.patch('dvcs.check_dvcs.get_previous_comments_urls', return_value=[]):
+            with mock.patch('dvcs.check_dvcs.get_commit_jira_numbers', side_effect=check_dvcs.CommandException("Failing on purpose")):
+                with mock.patch('dvcs.check_dvcs.requests.post'):
                     try:
                         check_dvcs.main()
                     except SystemExit:
@@ -225,9 +225,9 @@ class TestMain:
     def test_failed_to_add_comment(self, capsys):
         environ['PULL_REQUEST'] = '{"title": "junk", "_links": {"comments": {"href": "https://example.com"}}}'
         environ['GH_TOKEN'] = "asdf1234"
-        with mock.patch('check_dvcs.get_previous_comments_urls', return_value=[]):
-            with mock.patch('check_dvcs.get_commit_jira_numbers', return_value=[]):
-                with mock.patch('check_dvcs.does_pr_reference_ticket', return_value=True):
+        with mock.patch('dvcs.check_dvcs.get_previous_comments_urls', return_value=[]):
+            with mock.patch('dvcs.check_dvcs.get_commit_jira_numbers', return_value=[]):
+                with mock.patch('dvcs.check_dvcs.does_pr_reference_ticket', return_value=True):
                     with requests_mock.Mocker() as m:
                         m.register_uri('POST', 'https://example.com', status_code=404)
                         with pytest.raises(SystemExit) as e:
@@ -239,8 +239,8 @@ class TestMain:
     def test_failed_check(self):
         environ['PULL_REQUEST'] = '{"title": "junk", "_links": {"comments": {"href": "https://example.com"}}}'
         environ['GH_TOKEN'] = "asdf1234"
-        with mock.patch('check_dvcs.get_previous_comments_urls', return_value=[]):
-            with mock.patch('check_dvcs.get_commit_jira_numbers', return_value=[]):
+        with mock.patch('dvcs.check_dvcs.get_previous_comments_urls', return_value=[]):
+            with mock.patch('dvcs.check_dvcs.get_commit_jira_numbers', return_value=[]):
                 with requests_mock.Mocker() as m:
                     m.register_uri('POST', 'https://example.com', status_code=201)
                     with pytest.raises(SystemExit) as e:

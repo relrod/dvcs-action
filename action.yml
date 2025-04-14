@@ -1,7 +1,7 @@
 name: 'RH DVCS PR Checker'
 description: 'Checks that PR is valid for DVCS bot'
 inputs:
-  github_token: 
+  github_token:
      description: "A github token to create the comment in the PR with"
      required: true
 runs:
@@ -13,7 +13,7 @@ runs:
         python-version: '3.12'
         cache-dependency-path: |
           requirements.txt
-    
+
     - name: Install requirements.txt
       run: pip install -r ${GITHUB_ACTION_PATH}/requirements.txt
       shell: bash
@@ -22,5 +22,5 @@ runs:
       env:
         PULL_REQUEST: ${{ toJSON(github.event.pull_request) }}
         GH_TOKEN: ${{ inputs.github_token }}
-      run: ${GITHUB_ACTION_PATH}/check_dvcs.py
+      run: ${GITHUB_ACTION_PATH}/dvcs/check_dvcs.py
       shell: bash
