@@ -1,4 +1,3 @@
-from os import environ
 from unittest import mock
 
 import pytest
@@ -169,8 +168,8 @@ class TestMain:
             "",
         ],
     )
-    def test_invalid_pull_input(self, capsys, json):
-        environ['PULL_REQUEST'] = json
+    def test_invalid_pull_input(self, capsys, json, monkeypatch):
+        monkeypatch.setenv('PULL_REQUEST', json)
         with pytest.raises(SystemExit) as e:
             check_dvcs.main()
         output = capsys.readouterr()
@@ -184,19 +183,19 @@ class TestMain:
             "",
         ],
     )
-    def test_github_invalid_token(self, capsys, token):
-        environ['PULL_REQUEST'] = "{}"
+    def test_github_invalid_token(self, capsys, token, monkeypatch):
+        monkeypatch.setenv('PULL_REQUEST', "{}")
         if token:
-            environ['GH_TOKEN'] = token
+            monkeypatch.setenv('GH_TOKEN', token)
         with pytest.raises(SystemExit) as e:
             check_dvcs.main()
         output = capsys.readouterr()
         assert "Did not get a github token, failing" in output.out
         assert e.value.code == 255
 
-    def test_delete_previous_commit_fails(self, capsys):
-        environ['PULL_REQUEST'] = "{}"
-        environ['GH_TOKEN'] = "asdf1234"
+    def test_delete_previous_commit_fails(self, capsys, monkeypatch):
+        monkeypatch.setenv('PULL_REQUEST', "{}")
+        monkeypatch.setenv('GH_TOKEN', "asdf1234")
         with mock.patch('dvcs.check_dvcs.get_previous_comments_urls', side_effect=check_dvcs.CommandException("Failing on purpose")):
             with pytest.raises(SystemExit) as e:
                 check_dvcs.main()
@@ -204,14 +203,14 @@ class TestMain:
             assert "Failed to delete one or more comments" in output.out
             assert e.value.code == 255
 
-    def test_fail_to_get_commits(self, capsys):
+    def test_fail_to_get_commits(self, capsys, monkeypatch):
         """
         If we fail to get commits, don't bail out - we might have found a JIRA
         key in the PR title or branch name that we can use instead. But still
         report the failure to stdout.
         """
-        environ['PULL_REQUEST'] = '{"title": "junk"}'
-        environ['GH_TOKEN'] = "asdf1234"
+        monkeypatch.setenv('PULL_REQUEST', '{"title": "junk"}')
+        monkeypatch.setenv('GH_TOKEN', "asdf1234")
         with mock.patch('dvcs.check_dvcs.get_previous_comments_urls', return_value=[]):
             with mock.patch('dvcs.check_dvcs.get_commit_jira_numbers', side_effect=check_dvcs.CommandException("Failing on purpose")):
                 with mock.patch('dvcs.check_dvcs.requests.post'):
@@ -222,9 +221,9 @@ class TestMain:
                 output = capsys.readouterr()
                 assert "Failed to get commits" in output.out
 
-    def test_failed_to_add_comment(self, capsys):
-        environ['PULL_REQUEST'] = '{"title": "junk", "_links": {"comments": {"href": "https://example.com"}}}'
-        environ['GH_TOKEN'] = "asdf1234"
+    def test_failed_to_add_comment(self, capsys, monkeypatch):
+        monkeypatch.setenv('PULL_REQUEST', '{"title": "junk", "_links": {"comments": {"href": "https://example.com"}}}')
+        monkeypatch.setenv('GH_TOKEN', "asdf1234")
         with mock.patch('dvcs.check_dvcs.get_previous_comments_urls', return_value=[]):
             with mock.patch('dvcs.check_dvcs.get_commit_jira_numbers', return_value=[]):
                 with mock.patch('dvcs.check_dvcs.does_pr_reference_ticket', return_value=True):
@@ -236,9 +235,9 @@ class TestMain:
                         assert "Failed to add new comment" in output.out
                         assert e.value.code == 0
 
-    def test_failed_check(self):
-        environ['PULL_REQUEST'] = '{"title": "junk", "_links": {"comments": {"href": "https://example.com"}}}'
-        environ['GH_TOKEN'] = "asdf1234"
+    def test_failed_check(self, monkeypatch):
+        monkeypatch.setenv('PULL_REQUEST', '{"title": "junk", "_links": {"comments": {"href": "https://example.com"}}}')
+        monkeypatch.setenv('GH_TOKEN', "asdf1234")
         with mock.patch('dvcs.check_dvcs.get_previous_comments_urls', return_value=[]):
             with mock.patch('dvcs.check_dvcs.get_commit_jira_numbers', return_value=[]):
                 with requests_mock.Mocker() as m:

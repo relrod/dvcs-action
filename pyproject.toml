@@ -71,5 +71,5 @@ legacy_tox_ini = """
 """
 
 [tool.coverage.run]
-omit = ["test_check_dvcs.py"]
+omit = ["tests"]
 relative_files = true
